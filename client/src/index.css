@@ -1,0 +1,15 @@
+* {
+  font-family: "Courier Prime", serif;
+  box-sizing: border-box;
+  border: none;
+  outline: none;
+
+}
+
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #33394C;
+}
