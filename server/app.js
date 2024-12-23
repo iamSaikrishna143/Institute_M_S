@@ -5,7 +5,7 @@ const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
 
 const userRoute = require("./routes/user");
-const batchRoute = require("./routes/batch");
+const courseRoute = require("./routes/course");
 const studentRoute = require("./routes/student");
 const feeRoute = require("./routes/fee");
 
@@ -30,7 +30,7 @@ app.use(
 );
 
 app.use("/user", userRoute);
-app.use("/batch", batchRoute);
+app.use("/course", courseRoute);
 app.use("/student", studentRoute);
 app.use("/fee", feeRoute);
 
