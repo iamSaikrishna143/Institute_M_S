@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 require("dotenv").config();
+const Student = require("../routes/student");
 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -14,7 +15,7 @@ cloudinary.config({
 });
 
 // Define your routes here
-router.post("/add-course", checkAuth, (req, res) => {
+router.post("/:id", checkAuth, (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const verify = jwt.verify(token, "ererersdsvvvcvhg");
   // console.log(verify);
@@ -67,14 +68,17 @@ router.get("/all-course", checkAuth, (req, res) => {
 });
 
 // Get one course
-router.get("/courses-detail/:id", checkAuth, (req, res) => {
+router.get("/course-detail/:id", checkAuth, (req, res) => {
   Course.findById(req.params.id)
     .select(
       "_id uId courseName price startingDate endDate descrption imageUrl imageId"
     )
     .then((result) => {
-      res.status(200).json({
-        courses: result,
+      Student.find({ courseId: req.params.id }).then((student) => {
+        res.status(200).json({
+          courses: result,
+          studentList: students,
+        });
       });
     })
     .catch((err) => {
@@ -85,7 +89,7 @@ router.get("/courses-detail/:id", checkAuth, (req, res) => {
 });
 
 // Delete Course
-router.delete("/courses-detail/:id", checkAuth, (req, res) => {
+router.delete("/:id", checkAuth, (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const verify = jwt.verify(token, "ererersdsvvvcvhg");
 
@@ -114,7 +118,7 @@ router.delete("/courses-detail/:id", checkAuth, (req, res) => {
 });
 
 // update Course
-router.put("/courses-detail/:id", checkAuth, (req, res) => {
+router.put("/:id", checkAuth, (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const verify = jwt.verify(token, "ererersdsvvvcvhg");
   Course.findById(req.params.id)
@@ -125,9 +129,80 @@ router.put("/courses-detail/:id", checkAuth, (req, res) => {
         });
       }
       if (req.files) {
-        
+        cloudinary.uploader.destroy(course.imageId, (deletedImage) => {
+          cloudinary.uploader.upload(
+            req.files.image.tempFilePath,
+            (err, result) => {
+              const newUpdatedCourse = {
+                courseName: req.body.courseName,
+                price: req.body.price,
+                descrption: req.body.descrption,
+                startingDate: req.body.startingDate,
+                endDate: req.body.endDate,
+                uId: verify.uId, // user id
+                imageUrl: result.secure_url,
+                imageId: result.public_id,
+              };
+              Course.findByIdAndUpdate(req.params.id, newUpdatedCourse, {
+                new: true,
+              })
+                .then((data) => {
+                  res.status(200).json({
+                    updatedCourse: data,
+                  });
+                })
+                .catch((err) => {
+                  console.log(err);
+                  res.status(500).json({
+                    error: err,
+                  });
+                });
+            }
+          );
+        });
       } else {
+        const updataData = {
+          courseName: req.body.courseName,
+          price: req.body.price,
+          descrption: req.body.descrption,
+          startingDate: req.body.startingDate,
+          endDate: req.body.endDate,
+          uId: verify.uId, // user id
+          imageUrl: course.imageUrl,
+          imageId: course.imageId,
+        };
+        Course.findByIdAndUpdate(req.params.id, updataData, { new: true })
+          .then((data) => {
+            res.status(200).json({
+              updataData: data,
+            });
+          })
+          .catch((err) => {
+            res.status(500).json({
+              error: err,
+            });
+          });
       }
+    })
+    .catch((err) => {
+      res.status(500).json({
+        error: err,
+      });
+    });
+});
+
+//get latest 5 courses data
+router.get("/latest-courses", checkAuth, (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const verify = jwt.verify(token, "ererersdsvvvcvhg");
+  Course.find({ uId: verify.uId })
+    // .select('_id uId fullName phone address email courseId imageUrl imageId')
+    .sort({ $natural: -1 })
+    .limit(5)
+    .then((data) => {
+      res.status(200).json({
+        courses: data,
+      });
     })
     .catch((err) => {
       res.status(500).json({
